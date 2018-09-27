@@ -24,6 +24,20 @@ if (typeof PDFJS === 'undefined') {
   (typeof window !== 'undefined' ? window : this).PDFJS = {};
 }
 
+// Disable PDFJS Worker due to compatability issues associated w/ redirects & CORS
+// This impacts only Internet Explorer related browswers
+function pdfJSWorkerCompatabilityCheck() {
+    var ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    var msie = ua.indexOf('MSIE ');
+    var trident = ua.indexOf('Trident/');
+    var edge = ua.indexOf('Edge/');
+    if ( msie > 0 || trident > 0 || edge > 0 ){
+      PDFJS.disableWorker = true;
+    }
+}
+
+pdfJSWorkerCompatabilityCheck();
+
 // Checking if the typed arrays are supported
 // Support: iOS<6.0 (subarray), IE<10, Android<4.0
 (function checkTypedArrayCompatibility() {
