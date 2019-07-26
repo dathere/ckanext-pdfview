@@ -2,6 +2,7 @@ import logging
 
 import ckan.plugins as p
 import ckan.lib.datapreview as datapreview
+from ckan.plugins.toolkit import h, _
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +38,9 @@ class PdfView(p.SingletonPlugin):
 
     def configure(self, config):
         enabled = config.get('ckan.resource_proxy_enabled', False)
+        max_size =config.get('ckanext.pdfview.max_size', '2000000')
         self.proxy_is_enabled = enabled
+        self.custom_max_size = int(max_size)
 
     def can_view(self, data_dict):
         resource = data_dict['resource']
@@ -46,6 +49,10 @@ class PdfView(p.SingletonPlugin):
         proxy_enabled = p.plugin_loaded('resource_proxy')
         same_domain = datapreview.on_same_domain(data_dict)
 
+        pdf_size = resource.get('Size', 0)
+        if pdf_size > self.custom_max_size:
+            h.flash_notice(_('This PDF is too big for preview. Downloading the file is suggested'))
+            return False
         if format_lower in self.PDF:
             return same_domain or proxy_enabled
         return False
