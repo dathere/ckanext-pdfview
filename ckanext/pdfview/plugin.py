@@ -41,6 +41,8 @@ class PdfView(p.SingletonPlugin):
 
     def can_view(self, data_dict):
         resource = data_dict['resource']
+        if 'url' not in data_dict['resource']:
+            return False
         format_lower = resource.get('format', '').lower()
 
         proxy_enabled = p.plugin_loaded('resource_proxy')
