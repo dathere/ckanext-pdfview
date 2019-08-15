@@ -4262,6 +4262,7 @@ var PDFViewer = (function pdfViewer() {
       var pagesCount = pdfDocument.numPages;
       var pagesRefMap = this.pagesRefMap = {};
       var self = this;
+      self.oversize = false;
 
       var resolvePagesPromise;
       var pagesPromise = new Promise(function (resolve) {
@@ -4307,24 +4308,28 @@ var PDFViewer = (function pdfViewer() {
       return firstPagePromise.then(function(pdfPage) {
         var scale = this._currentScale || 1.0;
         var viewport = pdfPage.getViewport(scale * CSS_UNITS);
-        for (var pageNum = 1; pageNum <= pagesCount; ++pageNum) {
-          var textLayerFactory = null;
-          if (!PDFJS.disableTextLayer) {
-            textLayerFactory = this;
+        this.oversize = window.oversize;
+        if (this.oversize){
+          return
+        } else {
+          for (var pageNum = 1; pageNum <= pagesCount; ++pageNum) {
+            var textLayerFactory = null;
+            if (!PDFJS.disableTextLayer) {
+              textLayerFactory = this;
+            }
+            var pageView = new PDFPageView({
+              container: this.viewer,
+              id: pageNum,
+              scale: scale,
+              defaultViewport: viewport.clone(),
+              renderingQueue: this.renderingQueue,
+              textLayerFactory: textLayerFactory,
+              annotationsLayerFactory: this
+            });
+            bindOnAfterAndBeforeDraw(pageView);
+            this.pages.push(pageView);
           }
-          var pageView = new PDFPageView({
-            container: this.viewer,
-            id: pageNum,
-            scale: scale,
-            defaultViewport: viewport.clone(),
-            renderingQueue: this.renderingQueue,
-            textLayerFactory: textLayerFactory,
-            annotationsLayerFactory: this
-          });
-          bindOnAfterAndBeforeDraw(pageView);
-          this.pages.push(pageView);
-        }
-
+        };
         // Fetch all the pages since the viewport is needed before printing
         // starts to create the correct size canvas. Wait until one page is
         // rendered so we don't tie up too many resources early on.
@@ -6104,6 +6109,12 @@ var PDFViewerApplication = {
     DocumentProperties.pdfDocument = pdfDocument;
     DocumentProperties.resolveDataAvailable();
 
+    pdfDocument.getDownloadInfo().then(function(data){
+      if (data.length > 3000000){
+        self.error('This PDF is too large to be previewed in the browser. It is suggested to download.');
+        window.oversize =true;
+      }
+    });
     var downloadedPromise = pdfDocument.getDownloadInfo().then(function() {
       self.downloadComplete = true;
       self.loadingBar.hide();
