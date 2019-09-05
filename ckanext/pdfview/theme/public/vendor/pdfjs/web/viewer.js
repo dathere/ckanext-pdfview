@@ -4262,6 +4262,7 @@ var PDFViewer = (function pdfViewer() {
       var pagesCount = pdfDocument.numPages;
       var pagesRefMap = this.pagesRefMap = {};
       var self = this;
+      //the default value for oversize is false, the pdf file will be rendered
       self.oversize = false;
 
       var resolvePagesPromise;
@@ -4309,6 +4310,8 @@ var PDFViewer = (function pdfViewer() {
         var scale = this._currentScale || 1.0;
         var viewport = pdfPage.getViewport(scale * CSS_UNITS);
         this.oversize = window.oversize;
+        //if oversize is true, bindOnAfterAndBeforeDraw() will not be called
+        //and the pages will not be rendered which reduces server CPU usage
         if (this.oversize){
           return
         } else {
@@ -6109,9 +6112,11 @@ var PDFViewerApplication = {
     DocumentProperties.pdfDocument = pdfDocument;
     DocumentProperties.resolveDataAvailable();
 
+    //When getDownloadInfo() completed, the file size would be known
+    //if the file is larger than 3MB, set oversize to true
     pdfDocument.getDownloadInfo().then(function(data){
       if (data.length > 3000000){
-        self.error('This PDF is too large to be previewed in the browser. It is suggested to download.');
+        self.error('This PDF is too large to be previewed in the browser. It is suggested to download the PDF file.');
         window.oversize =true;
       }
     });
